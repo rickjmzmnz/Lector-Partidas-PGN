@@ -3,8 +3,7 @@ from Tkinter import *
 from PIL import ImageTk, Image
 from Lector import *
 import tkFileDialog
-import chess
-import chess.pgn
+import tkMessageBox
 import cairo
 import rsvg
 import os
@@ -13,6 +12,11 @@ import types
 
 class Interfaz(Frame):
 
+    """
+    Constructor de la clase
+    Se crea el canvas donde se pondra el tablero
+    Se crean los botones y etiquetas de la interfaz
+    """
     def __init__(self,parent):
         Frame.__init__(self,parent)
         self.pack(fill=BOTH,expand=True)
@@ -23,11 +27,17 @@ class Interfaz(Frame):
         self.tablero = None
         self.jugadas = None
         self.numeroJugada = 0
-        
+
+    """
+    Dibuja el canvas donde se colocara el tablero
+    """
     def creaCanvas(self):
         self.canvas = Canvas(self, bg="white",width=400,height=400)
         self.canvas.place(x=500,y=10)
-        
+
+    """
+    Se crean los botones para las diferentes acciones de la interfaz
+    """
     def creaBotones(self):
         botonAbrir = Button(self,text="Cargar archivo",command=self.cargaArchivo)
         botonAbrir.place(x=10,y=10)
@@ -36,12 +46,16 @@ class Interfaz(Frame):
         botonSalir.place(x=150,y=10)
 
         botonSig = Button(self,text="Siguiente jugada",command=self.siguienteMovimiento)
-        botonSig.place(x=500,y=430)
+        botonSig.place(x=650,y=430)
 
         botonAnt = Button(self,text="Anterior jugada",command=self.anteriorMovimiento)
-        botonAnt.place(x=650,y=430)
+        botonAnt.place(x=500,y=430)
 
 
+    """
+    Se colocan las etiquetas para detallar la informacion
+    Del archivo PGN que se cargue
+    """
     def creaEtiquetas(self):
         info = Label(self,text="Informacion de la partida")
         info.place(x=10,y=60)
@@ -76,12 +90,24 @@ class Interfaz(Frame):
         self.blancasPart = Label(self,text="-")
         self.blancasPart.place(x=90,y=210)
 
+        eloblancas = Label(self,text="ELO Blancas:")
+        eloblancas.place(x=250,y=210)
+
+        self.eloblancasPart = Label(self,text="-")
+        self.eloblancasPart.place(x=340,y=210)
+        
         negras = Label(self,text="Negras:")
         negras.place(x=10,y=240)
 
         self.negrasPart = Label(self,text="-")
         self.negrasPart.place(x=90,y=240)
 
+        elonegras = Label(self,text="ELO Negras:")
+        elonegras.place(x=250,y=240)
+
+        self.elonegrasPart = Label(self,text="-")
+        self.elonegrasPart.place(x=340,y=240)
+        
         resultado = Label(self,text="Resultado:")
         resultado.place(x=10,y=270)
 
@@ -93,7 +119,18 @@ class Interfaz(Frame):
 
         self.movimientosPart = Label(self,text="-")
         self.movimientosPart.place(x=90,y=300)
-        
+
+        jugada = Label(self,text="Jugada:")
+        jugada.place(x=800,y=430)
+
+        self.jugadaPart = Label(self,text="-")
+        self.jugadaPart.place(x=850,y=430)
+
+    """
+    Carga el archivo PGN seleccionado
+    Coloca la informacion del archivo
+    Y el tablero de la partida en el canvas
+    """
     def cargaArchivo(self):
         archivo = tkFileDialog.askopenfilename()
         pgn = open(archivo)
@@ -110,6 +147,8 @@ class Interfaz(Frame):
         self.tablero = lista[8]
         cadenaMov = lista[9]
         cadenaMov = self.ajustaCadena(cadenaMov)
+        cadenaEloBlancas = lista[10]
+        cadenaEloNegras = lista[11]
         
         self.eventoPart.config(text=cadenaEvento)
         self.lugarPart.config(text=cadenaLugar)
@@ -119,7 +158,9 @@ class Interfaz(Frame):
         self.negrasPart.config(text=cadenaNegras)
         self.resultadoPart.config(text=cadenaResultado)
         self.movimientosPart.config(text=cadenaMov)
-
+        self.eloblancasPart.config(text=cadenaEloBlancas)
+        self.elonegrasPart.config(text=cadenaEloNegras)
+        
         svg = obtenSvg(self.tablero)
         self.svgToImage(svg,"tablero")
         imagen = Image.open("tablero.png")
@@ -128,8 +169,10 @@ class Interfaz(Frame):
         self.canvas.create_image(imagenTk.width()/2,imagenTk.height()/2,anchor=CENTER,image=imagenTk,tags="tab")
 
         self.jugadas = obtenJugadas(self.partida)
-        print(self.jugadas)
 
+    """
+    Funcion para poder ajustar una cadena larga a la interfaz
+    """
     def ajustaCadena(self,cadena):
         nueva = ""
         partida = cadena.split()
@@ -143,44 +186,52 @@ class Interfaz(Frame):
             inicio = fin 
             fin = fin + 15
         return nueva
-        
-    def siguienteMovimiento(self):
-        if (self.numeroJugada < len(self.jugadas)):
-            svg = obtenSvg(self.tablero)
-            self.svgToImage(svg,"actual")
-            jugada = self.jugadas[self.numeroJugada]
-            self.numeroJugada += 1
-            siguienteJugada(jugada,self.tablero)
-            svg = obtenSvg(self.tablero)
-            self.svgToImage(svg,"tablero")
-            imagen = Image.open("tablero.png")
-            imagenTk = ImageTk.PhotoImage(imagen)
-            self.canvas.image = imagenTk
-            self.canvas.create_image(imagenTk.width()/2,imagenTk.height()/2,anchor=CENTER,image=imagenTk,tags="tab")
-            print(self.numeroJugada)
 
+    """
+    Realiza el siguiente movimiento de la partida
+    """
+    def siguienteMovimiento(self):
+        if self.canvas.find_all() != ():
+            if (self.numeroJugada < len(self.jugadas)):
+                jugada = self.jugadas[self.numeroJugada]
+                self.jugadaPart.config(text=str(jugada))
+                self.numeroJugada += 1
+                siguienteJugada(jugada,self.tablero)
+                svg = obtenSvg(self.tablero)
+                self.svgToImage(svg,"tablero")
+                imagen = Image.open("tablero.png")
+                imagenTk = ImageTk.PhotoImage(imagen)
+                self.canvas.image = imagenTk
+                self.canvas.create_image(imagenTk.width()/2,imagenTk.height()/2,anchor=CENTER,image=imagenTk,tags="tab")
+            else:
+                tkMessageBox.showwarning("Error","La partida ha terminado")
+        else:
+            tkMessageBox.showwarning("Error","Carga una partida PGN")
+
+    """
+    Se regresa a un movimiento anterior de la partida
+    """
     def anteriorMovimiento(self):
-        if(self.numeroJugada > 0):
-            self.numeroJugada += (-1)
-            anteriorJugada(self.tablero)
-            svg = obtenSvg(self.tablero)
-            self.svgToImage(svg,"tablero")
-            imagen = Image.open("tablero.png")
-            imagenTk = ImageTk.PhotoImage(imagen)
-            self.canvas.image = imagenTk
-            self.canvas.create_image(imagenTk.width()/2,imagenTk.height()/2,anchor=CENTER,image=imagenTk,tags="tab")
-            print(self.numeroJugada)
-    
+        if self.canvas.find_all() != ():
+            if(self.numeroJugada > 0):
+                self.numeroJugada += (-1)
+                jugada = self.jugadas[self.numeroJugada]
+                self.jugadaPart.config(text=str(jugada))
+                anteriorJugada(self.tablero)
+                svg = obtenSvg(self.tablero)
+                self.svgToImage(svg,"tablero")
+                imagen = Image.open("tablero.png")
+                imagenTk = ImageTk.PhotoImage(imagen)
+                self.canvas.image = imagenTk
+                self.canvas.create_image(imagenTk.width()/2,imagenTk.height()/2,anchor=CENTER,image=imagenTk,tags="tab")
+            else:
+                tkMessageBox.showwarning("Error","Ya no hay jugada previa")
+        else:
+            tkMessageBox.showwarning("Error","Carga una partida PGN")
+
     """
-    Funcion para guardar el diagrama
+    Convierte un archivo SVG a uno PNG
     """
-    def guardarTableroActual(self):
-        diagrama = Image.new("RGB",(400,400),"white")
-        nombre = "actual.png"
-        ps = self.canvas.postscript()
-        im = Image.open(io.BytesIO(ps.encode('utf-8')))
-        im.save(nombre)
-            
     def svgToImage(self,svg,nombre):
         img = cairo.ImageSurface(cairo.FORMAT_ARGB32, 640,480)
         ctx = cairo.Context(img)
@@ -188,13 +239,25 @@ class Interfaz(Frame):
         handle.render_cairo(ctx)
         img.write_to_png(nombre+".png")
 
-        
+    """
+    Borra el archivo png del tablero generado por el programa
+    Y se sale del programa
+    """
     def salir(self):
-        os._exit(0)
-        
+        try:
+            os.remove("tablero.png")
+            os._exit(0)
+        except OSError:
+            os._exit(0)
+
+"""
+Main del programa
+Crea una ventana y manda a llamar al constructor de la clase
+Para poder interactuar con las acciones que se puedan realizar
+"""
 if __name__=="__main__":
     root = Tk()
-    root.geometry("1000x500")
+    root.geometry("920x500")
     root.title("Lector PGN")
     root.wm_state("normal")
     app = Interfaz(root)

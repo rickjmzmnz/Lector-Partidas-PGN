@@ -3,6 +3,11 @@ import chess.pgn
 import chess.svg
 import types
 
+"""
+Abre un archivo pgn
+Se obtiene la informacion del archivo
+Y se regresa en una lista
+"""
 def abrePGN(pgn):
     partida = chess.pgn.read_game(pgn)
     evento = partida.headers["Event"]
@@ -12,36 +17,39 @@ def abrePGN(pgn):
     blanco = partida.headers["White"]
     negro = partida.headers["Black"]
     resultado = partida.headers["Result"]
+    elob = partida.headers["WhiteElo"]
+    elon = partida.headers["BlackElo"]
     tablero = partida.board()
     moves = partida.main_line()
     movimientos = partida.board().variation_san(moves)
 
-    return [partida,evento,lugar,fecha,ronda,blanco,negro,resultado,tablero,movimientos]
-    
-def obtenListaMov(partida):
-    
-    temp = partida
-    longi = 0
-    #Hace los movimientos de la partida
-    for move in temp.main_line():
-        longi += 1
+    return [partida,evento,lugar,fecha,ronda,blanco,negro,resultado,tablero,movimientos,elob,elon]
 
-    lista = [None] * longi
-    pos = 0
-    for move in first.main_line():
-        lista[pos] = move
-        pos += 1
-
+"""
+Se obtiene la representacion del tablero en formato svg
+"""
 def obtenSvg(tablero):
     svg = chess.svg.board(board=tablero)
     return svg
 
+"""
+Dado un tablero y una jugada
+Se realiza la jugada en el tablero
+"""
 def siguienteJugada(jugada,tablero):
     tablero.push(jugada)
 
+"""
+Dado un tablero, se regresa a la jugada anterior
+"""
 def anteriorJugada(tablero):
     tablero.pop()
-    
+
+"""
+Dada una partida de un archivo pgn
+Se obtiene cada jugada de ella
+Y se regresan en una lista
+"""
 def obtenJugadas(partida):
     temp = partida
     
@@ -57,58 +65,3 @@ def obtenJugadas(partida):
 
     return lista
     
-    
-def prueba(pgn):
-    #Abrir archivo pgn
-    #pgn = open("Kasparov.pgn")
-    
-    #Leer cada partida del archivo
-    first = chess.pgn.read_game(pgn)
-    second = chess.pgn.read_game(pgn)
-
-    #print first
-    #print(first.headers["Event"])
-    #print second
-
-    #Obtiene el tablero
-    board = first.board()
-    moves = first.main_line()
-    allMoves = first.board().variation_san(moves)
-    print(allMoves)
-
-    """
-    nodo = first
-    while not nodo.is_end():
-        nodoSig = nodo.variations[0]
-        print(nodo.board().san(nodoSig.move))
-        nodo = nodoSig
-    """
-    #move = (first.main_line().next())
-    #print((first.main_line().next()))
-
-    temp = first
-    
-    longi = 0
-    #Hace los movimientos de la partida
-    for move in temp.main_line():
-        #print(move)
-        #board.push(move)
-        #print(board)
-        #print("\n")
-        longi += 1
-
-    print(longi)
-        
-    lista = [None] * longi
-    print(len(lista))
-    pos = 0
-    for move in first.main_line():
-        lista[pos] = move
-        pos += 1
-
-    print(lista)
-        
-    #Genera el svg del tablero
-    svg = chess.svg.board(board=board)
-    return svg
-
