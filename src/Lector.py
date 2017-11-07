@@ -8,8 +8,7 @@ Abre un archivo pgn
 Se obtiene la informacion del archivo
 Y se regresa en una lista
 """
-def abrePGN(pgn):
-    partida = chess.pgn.read_game(pgn)
+def abrePGN(partida):
     evento = partida.headers["Event"]
     lugar = partida.headers["Site"]
     fecha = partida.headers["Date"]
@@ -17,13 +16,11 @@ def abrePGN(pgn):
     blanco = partida.headers["White"]
     negro = partida.headers["Black"]
     resultado = partida.headers["Result"]
-    elob = partida.headers["WhiteElo"]
-    elon = partida.headers["BlackElo"]
     tablero = partida.board()
     moves = partida.main_line()
     movimientos = partida.board().variation_san(moves)
 
-    return [partida,evento,lugar,fecha,ronda,blanco,negro,resultado,tablero,movimientos,elob,elon]
+    return [partida,evento,lugar,fecha,ronda,blanco,negro,resultado,tablero,movimientos]
 
 """
 Se obtiene la representacion del tablero en formato svg
@@ -62,6 +59,23 @@ def obtenJugadas(partida):
     for move in partida.main_line():
         lista[pos] = move
         pos += 1
+
+    return lista
+
+"""
+Cuenta el numero de partidas de un archivo
+"""
+def cuentaPartidas(pgn):
+    lista = []
+    bandera = True
+    juego = None
+
+    while(bandera):
+        juego = chess.pgn.read_game(pgn)
+        if(juego != None):
+            lista.append(juego)
+        else:
+            bandera = False
 
     return lista
     

@@ -22,7 +22,10 @@ class Interfaz(Frame):
         self.pack(fill=BOTH,expand=True)
         self.creaCanvas()
         self.creaBotones()
+        self.creaListbox()
         self.creaEtiquetas()
+        self.acciones()
+        self.listaPartidas = None
         self.partida = None
         self.tablero = None
         self.jugadas = None
@@ -39,7 +42,7 @@ class Interfaz(Frame):
     Se crean los botones para las diferentes acciones de la interfaz
     """
     def creaBotones(self):
-        botonAbrir = Button(self,text="Cargar archivo",command=self.cargaArchivo)
+        botonAbrir = Button(self,text="Cargar archivo",command=self.cuentaPartidas)
         botonAbrir.place(x=10,y=10)
 
         botonSalir = Button(self,text="Salir",command=self.salir)
@@ -51,7 +54,25 @@ class Interfaz(Frame):
         botonAnt = Button(self,text="Anterior jugada",command=self.anteriorMovimiento)
         botonAnt.place(x=500,y=430)
 
+    """
+    Crea el listbox donde se van a mostrar todas las partidas del archivo cargado
+    """
+    def creaListbox(self):
+        scrollbar = Scrollbar(self,orient=VERTICAL)
+        scrollbar2 = Scrollbar(self,orient=HORIZONTAL)
+        self.listbox = Listbox(self,yscrollcommand=scrollbar.set,xscrollcommand=scrollbar2.set,height=18,width=36)
+        scrollbar.config(command=self.listbox.yview)
+        scrollbar.place(x=475,y=10)
+        scrollbar2.config(command=self.listbox.xview)
+        scrollbar2.place(x=220,y=285)
+        self.listbox.place(x=220,y=10)
 
+    """
+    Carga la partida que sea seleccionada en la lista de partidas cargadas
+    """
+    def acciones(self):
+        self.listbox.bind("<Double-Button-1>",self.cargaPartida)
+            
     """
     Se colocan las etiquetas para detallar la informacion
     Del archivo PGN que se cargue
@@ -90,23 +111,11 @@ class Interfaz(Frame):
         self.blancasPart = Label(self,text="-")
         self.blancasPart.place(x=90,y=210)
 
-        eloblancas = Label(self,text="ELO Blancas:")
-        eloblancas.place(x=250,y=210)
-
-        self.eloblancasPart = Label(self,text="-")
-        self.eloblancasPart.place(x=340,y=210)
-        
         negras = Label(self,text="Negras:")
         negras.place(x=10,y=240)
 
         self.negrasPart = Label(self,text="-")
         self.negrasPart.place(x=90,y=240)
-
-        elonegras = Label(self,text="ELO Negras:")
-        elonegras.place(x=250,y=240)
-
-        self.elonegrasPart = Label(self,text="-")
-        self.elonegrasPart.place(x=340,y=240)
         
         resultado = Label(self,text="Resultado:")
         resultado.place(x=10,y=270)
@@ -127,14 +136,19 @@ class Interfaz(Frame):
         self.jugadaPart.place(x=850,y=430)
 
     """
-    Carga el archivo PGN seleccionado
-    Coloca la informacion del archivo
-    Y el tablero de la partida en el canvas
+    La partida seleccionada de la lista es cargada y se obtiene toda la informacion de ella
     """
-    def cargaArchivo(self):
-        archivo = tkFileDialog.askopenfilename()
-        pgn = open(archivo)
-        lista = abrePGN(pgn)
+    def cargaPartida(self,evento):
+        selec = self.listbox.curselection()
+        indice = selec[0]
+        partida = self.listaPartidas[indice]
+    
+        lista = abrePGN(partida)
+
+        self.partida = None
+        self.tablero = None
+        self.jugadas = None
+        self.numeroJugada = 0
         
         self.partida = lista[0]
         cadenaEvento = lista[1]
@@ -147,9 +161,7 @@ class Interfaz(Frame):
         self.tablero = lista[8]
         cadenaMov = lista[9]
         cadenaMov = self.ajustaCadena(cadenaMov)
-        cadenaEloBlancas = lista[10]
-        cadenaEloNegras = lista[11]
-        
+       
         self.eventoPart.config(text=cadenaEvento)
         self.lugarPart.config(text=cadenaLugar)
         self.fechaPart.config(text=cadenaFecha)
@@ -158,8 +170,6 @@ class Interfaz(Frame):
         self.negrasPart.config(text=cadenaNegras)
         self.resultadoPart.config(text=cadenaResultado)
         self.movimientosPart.config(text=cadenaMov)
-        self.eloblancasPart.config(text=cadenaEloBlancas)
-        self.elonegrasPart.config(text=cadenaEloNegras)
         
         svg = obtenSvg(self.tablero)
         self.svgToImage(svg,"tablero")
@@ -169,6 +179,19 @@ class Interfaz(Frame):
         self.canvas.create_image(imagenTk.width()/2,imagenTk.height()/2,anchor=CENTER,image=imagenTk,tags="tab")
 
         self.jugadas = obtenJugadas(self.partida)
+
+    """
+    Carga todas las partidas dentro de un archivo pgn
+    """
+    def cuentaPartidas(self):
+        self.listbox.delete(0,END)
+        archivo = tkFileDialog.askopenfilename()
+        pgn = open(archivo)
+        self.listaPartidas = cuentaPartidas(pgn)
+        for i in range(len(self.listaPartidas)):
+            partida = self.listaPartidas[i]
+            self.listbox.insert(END,partida)
+
 
     """
     Funcion para poder ajustar una cadena larga a la interfaz
